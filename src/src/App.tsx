@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createDeck, type CardType } from "./utils/deck";
 import { handTotal } from "./utils/hand";
 import { hiLoValue } from "./utils/count";
@@ -17,25 +17,18 @@ export default function App() {
     const [canDouble, setCanDouble] = useState(false);
     const [message, setMessage] = useState("");
 
-    useEffect(() => {
-        console.log("Running count:", runningCount);
-    }, [runningCount]);
-
+    const reshuffleIfNeeded = () => {
+        if (deck.length < 15) setDeck(createDeck(1));
+    };
 
     const dealInitial = () => {
         if (!gameOver) return;
-
-        if (deck.length < 10) {
-            setDeck(createDeck(1));
-            setMessage("Created new deck!");
-            return;
-        }
-
         if (bet < 1 || bet > bankroll) {
             setMessage("Invalid bet!");
             return;
         }
 
+        reshuffleIfNeeded();
         const newDeck = [...deck];
         const p1 = newDeck.pop()!;
         const d1 = newDeck.pop()!;
@@ -53,11 +46,6 @@ export default function App() {
         setGameOver(false);
         setCanDouble(true);
         setMessage("");
-
-        if (checkState(bet, [p1, p2])) {
-            setGameOver(true);
-            return;
-        }
     };
 
     const hit = () => {
@@ -69,26 +57,27 @@ export default function App() {
         setPlayerHand(newHand);
         setDeck(newDeck);
         setRunningCount(prev => prev + hiLoValue(card.value));
-        setCanDouble(false);
 
-        if(checkState(bet, newHand)) {
-            revealDealer();
+        const total = handTotal(newHand.map(c => c.value));
+        if (total > 21) {
+            setMessage(`Player busts! You lose $${bet}.`);
             setGameOver(true);
-            return;
+            setCanDouble(false);
+            playDealer(true);
         }
-
-        return;
-    }
+    };
 
     const stand = () => {
+        if (gameOver) return;
         setCanDouble(false);
-        revealDealer();
-        playDealer(bet, playerHand);
-        return;
-    }
+        playDealer();
+    };
 
     const doubleDown = () => {
-        if (!canDouble) return;
+        if (!canDouble || bankroll < bet) return;
+
+        setBankroll(prev => prev - bet);
+        setBet(prev => prev * 2);
 
         const newDeck = [...deck];
         const card = newDeck.pop()!;
@@ -96,132 +85,55 @@ export default function App() {
         setPlayerHand(newHand);
         setDeck(newDeck);
         setRunningCount(prev => prev + hiLoValue(card.value));
+
         setCanDouble(false);
+        playDealer();
+    };
 
-        const newBet = bet * 2;
-
-        setBankroll(prev => prev - bet);
-        setBet(newBet);
-
-        revealDealer();
-
-        if(checkState(newBet, newHand)) {
-            setGameOver(true);
-            return;
-        } else {
-            playDealer(newBet, newHand);
-        }
-
-        return;
-    }
-
-    const playDealer = (currentBet, newPlayerHand) => {
-        revealDealer();
-
+    const playDealer = (playerBusted = false) => {
+        const dealerRevealed = dealerHand.map(c => ({ ...c, hidden: false }));
+        setDealerHand(dealerRevealed);
+        let dealer = [...dealerRevealed];
         let newDeck = [...deck];
-        let newDealerHand = [...dealerHand];
 
-        while (handTotal(newDealerHand) < 17) {
+        const dealerTotal = () => handTotal(dealer.map(c => c.value));
+
+        while (dealerTotal() < 17) {
             const card = newDeck.pop()!;
-            newDealerHand.push(card);
+            dealer.push(card);
             setRunningCount(prev => prev + hiLoValue(card.value));
         }
 
-        setDealerHand(newDealerHand);
+        setDealerHand(dealer);
         setDeck(newDeck);
 
-        const player = handTotal(newPlayerHand);
-        const dealer = handTotal(newDealerHand);
+        const playerTotal = handTotal(playerHand.map(c => c.value));
+        const finalDealerTotal = dealerTotal();
 
-        if (dealer > 21) {
-            setMessage(`Dealer busts! You get $${2 * currentBet}!`);
-            setBankroll(prev => prev + (2 * currentBet));
-            setGameOver(true);
-            return 1;
+        let resultMessage;
+        let payout = 0;
+
+        if (playerBusted) {
+            payout = 0;
+            resultMessage = `Player busts! You lose $${bet}.`;
+        } else if (finalDealerTotal > 21) {
+            payout = bet * 2;
+            resultMessage = `Dealer busts! You win $${bet * 2}!`;
+        } else if (playerTotal > finalDealerTotal) {
+            payout = bet * 2;
+            resultMessage = `Player wins! You win $${bet * 2}!`;
+        } else if (playerTotal < finalDealerTotal) {
+            payout = 0;
+            resultMessage = `Dealer wins! You lose $${bet}.`;
+        } else {
+            payout = bet;
+            resultMessage = "Push!";
         }
 
-        if (player > dealer) {
-            setMessage(`Player wins! You get $${2 * currentBet}!`);
-            setBankroll(prev => prev + (2 * currentBet));
-            setGameOver(true);
-            return;
-        }
-
-        if (dealer > player) {
-            setMessage("Dealer wins. You lose.");
-            setGameOver(true);
-            return;
-        }
-
-        if (player === dealer) {
-            setMessage("Push!");
-            setBankroll(prev => prev + currentBet);
-            setGameOver(true);
-            return;
-        }
-    }
-
-    const checkState = (currentBet = bet, latestPlayerHand) => {
-        let player = handTotal(latestPlayerHand);
-        let dealer = handTotal(dealerHand);
-
-        const playerBJ = player === 21 && latestPlayerHand.length === 2;
-        const dealerBJ = dealer === 21 && dealerHand.length === 2;
-
-        if (playerBJ && dealerBJ) {
-            revealDealer();
-            setMessage("Push! Both have Blackjack.");
-            setBankroll(prev => prev + currentBet);
-            return 1;
-        }
-
-        if (playerBJ) {
-            revealDealer();
-            setMessage(`Blackjack! You get $${2.5 * currentBet}!`);
-            setBankroll(prev => prev + (2.5 * currentBet));
-            return 1;
-        }
-
-        if (dealerBJ) {
-            revealDealer();
-            setMessage("Dealer has Blackjack. You lose.");
-            return 1;
-        }
-
-        if (player > 21) {
-            revealDealer();
-            setMessage("Bust! You lose.");
-            return 1;
-        }
-
-        if (dealer > 21) {
-            setMessage(`Dealer busts! You get $${2 * currentBet}!`);
-            setBankroll(prev => prev + (2 * currentBet));
-            return 1;
-        }
-
-        if (player === 21 && dealer !== 21) {
-            setMessage(`21! You get $${2 * currentBet}!`);
-            setBankroll(prev => prev + (2 * currentBet));
-            return 1;
-        }
-
-        return 0;
-    };
-
-    const revealDealer = (hand = dealerHand) => {
-        if (!hand || hand.length === 0) {
-            console.error("No hand!");
-            return;
-        }
-
-        const hiddenCardValue = hiLoValue(hand[0].value);
-        const newHand = hand.map((card, i) =>
-            i === 0 ? { ...card, hidden: false } : card
-        );
-
-        setDealerHand(newHand);
-        setRunningCount(prev => prev + hiddenCardValue);
+        setMessage(resultMessage);
+        setBankroll(prev => prev + payout);
+        setGameOver(true);
+        setBet(10);
     };
 
     return (

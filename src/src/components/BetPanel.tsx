@@ -14,12 +14,11 @@ const BetPanel: React.FC<BetPanelProps> = ({ bankroll, bet, setBet, onDeal, game
             <p>Bankroll: ${bankroll}</p>
             <input
                 type="number"
-                min={2}
+                min={1}
                 max={bankroll}
                 value={bet}
                 onChange={(e) => setBet(Math.min(bankroll, Math.max(1, Number(e.target.value))))}
                 disabled={!gameOver}
-                step={2}
             />
             <button
                 onClick={onDeal}
