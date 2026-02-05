@@ -1,5 +1,5 @@
 import Card from "./Card";
-import type { CardType } from "../utils/deck";
+import type { Card as CardType } from "../utils/deck";
 
 interface HandProps {
     hand: CardType[];
@@ -11,7 +11,9 @@ export default function Hand({ hand, label }: HandProps) {
         <div style={{ marginBottom: "10px" }}>
             <h3>{label}</h3>
             <div style={{ display: "flex" }}>
-                {hand.map((c, i) => <Card card={c} key={i} />)}
+                {hand.map((c, i) => (
+                    <Card card={c} key={i} />
+                ))}
             </div>
         </div>
     );

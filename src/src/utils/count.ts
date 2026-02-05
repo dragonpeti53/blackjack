@@ -6,7 +6,7 @@ import type { CardValue } from "./deck";
  * 7-9: 0
  * 10,Ace: -1
  */
-export function hiLoValue(value: CardValue): number {
+export function hiLoValue(value: Card): number {
     if (['2','3','4','5','6'].includes(value)) return 1;
     if (['10','J','Q','K','A'].includes(value)) return -1;
     return 0;

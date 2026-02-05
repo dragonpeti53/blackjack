@@ -1,14 +1,14 @@
-import type { CardValue } from "./deck";
+import type {Card, CardValue} from "./deck";
 
-export function cardValue(value: CardValue): number {
-    if (['J','Q','K'].includes(value)) return 10;
+export function cardValue(value: Card): number {
+    if (['J','Q','K'].includes(value.value)) return 10;
     if (value === 'A') return 11;
-    return parseInt(value);
+    return parseInt(value.value);
 }
 
-export function handTotal(hand: CardValue[]): number {
+export function handTotal(hand: Card[]): number {
     let total = hand.reduce((sum, val) => sum + cardValue(val), 0);
-    let aces = hand.filter(val => val === 'A').length;
+    let aces = hand.filter(val => val.value === 'A').length;
 
     while (total > 21 && aces > 0) {
         total -= 10;

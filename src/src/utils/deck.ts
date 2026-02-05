@@ -1,7 +1,7 @@
 export type CardValue = "2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"J"|"Q"|"K"|"A";
 export type Suit = "C"|"D"|"H"|"S";
 
-export interface CardType {
+export interface Card {
     value: CardValue;
     suit: Suit;
     hidden: boolean;
@@ -13,8 +13,8 @@ const values: CardValue[] = ["2","3","4","5","6","7","8","9","10","J","Q","K","A
  * Create a deck of cards
  * @param numDecks number of decks to include
  */
-export function createDeck(numDecks = 1): CardType[] {
-    const deck: CardType[] = [];
+export function createDeck(numDecks = 1): Card[] {
+    const deck: Card[] = [];
 
     const suits: Suit[] = ['C', 'D', 'H', 'S'];
 
