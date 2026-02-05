@@ -58,13 +58,18 @@ export default function App() {
         setDeck(newDeck);
         setRunningCount(prev => prev + hiLoValue(card.value));
 
-        const total = handTotal(newHand.map(c => c.value));
-        if (total > 21) {
-            setMessage(`Player busts! You lose $${bet}.`);
-            setGameOver(true);
-            setCanDouble(false);
-            playDealer(true);
-        }
+
+
+        setTimeout(() => {
+            const total = handTotal(newHand.map(c => c.value));
+            if (total > 21) {
+                setMessage(`Player busts! You lose $${bet}.`);
+                setGameOver(true);
+                setCanDouble(false);
+                playDealer(true);
+            }
+        }, 100);
+
     };
 
     const stand = () => {
