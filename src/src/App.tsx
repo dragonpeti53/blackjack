@@ -11,11 +11,12 @@ type GameState = {
     playerHand: Card[];
     dealerHand: Card[];
     turn: "player" | "dealer";
-    status: string | "playing" | "busted" | "dealerTurn" | "finished";
+    status: "playing" | "dealerTurn" | "finished";
     result: null | "win" | "lose" | "push";
     balance: number;
     bet: number;
     runningCount: number;
+    message: string;
 };
 
 type Action =
@@ -30,23 +31,24 @@ type Action =
 
 export default function App() {
 
-    const initialState = {
+    const initialState: GameState = {
         deck: createDeck(),
         playerHand: [],
         dealerHand: [],
         turn: "player",  // "player" | "dealer"
-        status: "finished",  // "playing" | "finished"
+        status: "finished",  // "playing" | "dealerTurn" | "finished";
         result: null,  // null | "win" | "lose" | "push"
         balance: 1000,
         bet: 10,
         runningCount: 0,
+        message: "",
     };
 
     function revealDealerHole(hand: Card[]) {
         return hand.map(c => ({ ...c, hidden: false }));
     }
 
-    function reducer(state: GameState, action: Action) {
+    function reducer(state: GameState, action: Action): GameState {
         switch (action.type) {
             case "DEAL": {
                 let deck;
@@ -74,7 +76,9 @@ export default function App() {
                 const dealerTotal = handTotal(dealerHand);
 
                 if (playerTotal === 21 || dealerTotal === 21) {
-                    let result = state.result;
+                    let result: null | "win" | "lose" | "push" = state.result;
+
+                    let message = state.message;
 
                     runningCount = runningCount + hiLoValue(d1);
                     const visibleDealerHand = revealDealerHole(dealerHand);
@@ -82,11 +86,14 @@ export default function App() {
                     if (playerTotal === 21 && dealerTotal !== 21) {
                         result = "win";
                         balance = balance + bet * 2.5;
+                        message = "You have Blackjack!";
                     } else if (dealerTotal === 21 && playerTotal !== 21) {
                         result = "lose";
+                        message = "Dealer has Blackjack!";
                     } else {
                         result = "push";
                         balance = balance + bet;
+                        message = "Both have Blackjack!";
                     }
 
                     return {
@@ -99,6 +106,7 @@ export default function App() {
                         result,
                         runningCount,
                         balance,
+                        message,
                     };
                 }
 
@@ -131,6 +139,8 @@ export default function App() {
                     let revealedDealerHand = state.dealerHand;
                     const dealerHole = state.dealerHand[0];
 
+                    const message = "You bust!";
+
                     if (dealerHole && (dealerHole as any).hidden) {
                         finalRunningCount += hiLoValue(dealerHole);
                         revealedDealerHand = revealDealerHole(state.dealerHand);
@@ -145,6 +155,7 @@ export default function App() {
                         status: "finished",
                         result: "lose",
                         turn: "player",
+                        message,
                     };
                 }
 
@@ -204,18 +215,24 @@ export default function App() {
 
                 let newBalance = state.balance;
 
+                let message = state.message;
+
                 if (playerTotal > 21) {
                     result = "lose";
                 } else if (dealerTotal > 21) {
+                    message = "Dealer busts!";
                     result = "win";
                     newBalance = state.balance + state.bet * 2;
                 } else if (playerTotal > dealerTotal) {
+                    message = "You are closer to 21!"
                     result = "win";
                     newBalance = state.balance + state.bet * 2;
                 } else if (playerTotal < dealerTotal) {
+                    message = "Dealer is closer to 21!"
                     result = "lose";
                 } else {
                     result = "push";
+                    message = "";
                     newBalance = state.balance + state.bet;
                 }
 
@@ -225,49 +242,10 @@ export default function App() {
                     balance: newBalance,
                     result,
                     turn: "player",
+                    message,
                 };
             }
 
-/*
-                const playerTotal = handTotal(state.playerHand);
-                const dealerTotal = handTotal(dealerHand);
-
-                let result = state.result;
-
-                if (dealerTotal > 21) {
-                    result = "win";
-                }
-
-                else if (playerTotal === dealerTotal) {
-                    result = "push";
-                }
-
-                else if (playerTotal > dealerTotal) {
-                    result = "win";
-                }
-
-                else if (playerTotal <  dealerTotal) {
-                    result = "lose";
-                }
-
-                let status = state.status;
-
-                if (result !== null) {
-                    status = "finished";
-                }
-
-                return {
-                    ...state,
-                    deck,
-                    dealerHand,
-                    turn,
-                    status,
-                    runningCount,
-                    result,
-                }
-
-            }
-*/
             case "SET_BET": {
                 const amount = action.payload;
                 if (state.status !== "finished") return state;
@@ -328,7 +306,6 @@ export default function App() {
         gameState.result,
     ]);
 
-
     return (
         <div style={{ padding: "20px", fontFamily: "sans-serif" }}>
             <h1>Blackjack</h1>
@@ -352,11 +329,13 @@ export default function App() {
                 />
             )}
 
-            {gameState.status === "finished" && gameState.result && (
+            {gameState.status === "finished" && gameState.result !== null && (
                 <h2>
-                    {gameState.result === "win" && "You Win!"}
-                    {gameState.result === "lose" && "You Lose!"}
-                    {gameState.result === "push" && "Push!"}
+                    {{
+                        win: `You Win! ${gameState.message}`,
+                        lose: `You Lose! ${gameState.message}`,
+                        push: `Push! ${gameState.message}`,
+                    }[gameState.result]}
                 </h2>
             )}
 

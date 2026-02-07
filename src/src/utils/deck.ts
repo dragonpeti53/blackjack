@@ -35,3 +35,12 @@ export function createDeck(numDecks = 1): Card[] {
 
     return deck;
 }
+
+export function makeCard(value: CardValue, suit: Suit) {
+    let card: Card = {
+        value,
+        suit,
+        hidden: false,
+    }
+    return card;
+}

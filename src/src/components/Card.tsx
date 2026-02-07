@@ -1,7 +1,7 @@
-import { type CardType } from "../utils/deck";
+import { type Card } from "../utils/deck";
 
 interface CardProps {
-    card: CardType;
+    card: Card;
 }
 
 export default function Card({ card }: CardProps) {

@@ -1,8 +1,8 @@
-import type {Card, CardValue} from "./deck";
+import type { Card } from "./deck";
 
 export function cardValue(value: Card): number {
     if (['J','Q','K'].includes(value.value)) return 10;
-    if (value === 'A') return 11;
+    if (value.value === 'A') return 11;
     return parseInt(value.value);
 }
 
